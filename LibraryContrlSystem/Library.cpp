@@ -3,6 +3,7 @@
 #include <string>
 #include <fstream>
 #include <sstream>
+#include <mysql.h>
 using namespace std;
 void Library::add_user(string type, string userID, string Name) {
     User* user = nullptr;
@@ -14,6 +15,11 @@ void Library::add_user(string type, string userID, string Name) {
 void Library::add_book(string type, string isbn, string book_name, string auther, string publishing_h, string publishing_t, int inventory)
 {
     Book* book = nullptr;
+    MYSQL* conn = mysql_init(NULL);
+    if (!mysql_real_connect(conn, "localhost", "LIBRARY_ADMINISTATER", "123456", "library_contrl_system", 3306, NULL, 0))
+    {
+        cout << "connect faile" << endl;
+    }
     if (type == "electronic")
     {
         double size;
@@ -21,10 +27,14 @@ void Library::add_book(string type, string isbn, string book_name, string auther
         cout << "please input size,format" << endl;
         cin >> size >> format;
         book = new EBook(isbn, book_name, auther, publishing_h, publishing_t, inventory, size, format);
+        string insert_sql = "insert into book_list(isbn, book_name, auther, publishing_house, publishing_time, inventory, format,size) values (" + isbn + book_name + auther + publishing_h + publishing_t + to_string(inventory) + to_string(size) + format+")";
+        mysql_query(conn, insert_sql.c_str());
     }
     else
     {
         book = new Book(isbn, book_name, auther, publishing_h, publishing_t, inventory);
+        string insert_sql = "insert into book_list(isbn, book_name, auther, publishing_house, publishing_time, inventory, format,size) values (" + isbn + book_name + auther + publishing_h + publishing_t + to_string(inventory) + ")";
+        mysql_query(conn, insert_sql.c_str());
     }
     booklist.push_back(book);
 }
@@ -107,154 +117,68 @@ User* Library::searchuserbyID(const string& ID)
 
 //----------------------------------------------------文件写入----------------------------------------------------
 //--------------------------------------写入书本-----------------------------------------------
-void Library::savebooks()
-{
-    ofstream out;
-    out.open("books.txt", ios::out);
-    if (!out.is_open())
-    {
-        cout << "Can't open the file" << endl;
-    }
-    else
-    {
-        for (int i = 0; i < booklist.size(); i++)
-        {
-            out << booklist[i]->getISBN() << "|"
-                << booklist[i]->getbookName() << "|"
-                << booklist[i]->getAuther() << "|"
-                << booklist[i]->getPublishingHouse() << "|"
-                << booklist[i]->getPublishingTime() << "|"
-                << booklist[i]->getinventorystr() << "|";
-            EBook* eb = dynamic_cast<EBook*>(booklist[i]);
-            if (eb)
-            {
-                out << "electronic|" << eb->getFileSize() << "|" << eb->getFormat() << "|";
-            }
-            else
-            {
-                out << "normal|0|";
-            }
-            out << endl;
-        }
-    }
-
-
-    out.close();
-}
-//----------------------------------------写入用户----------------------------------------------
-void Library::saveusers()
-{
-    ofstream out;
-    out.open("User.txt", ios::out);
-    if (!out.is_open())
-    {
-        cout << "Can't open the file" << endl;
-    }
-    else
-    {
-        for (int i = 0; i < userlist.size(); i++)
-        {
-            out << userlist[i]->getID() << "|"
-                << userlist[i]->getname() << "|"
-                << userlist[i]->gettype() << "|"
-                << userlist[i]->getborrowedbookisbn() << "|" << endl;
-        }
-    }
-    out.close();
-}
+//void Library::savebooks()
+//{
+//    
+//}
+////----------------------------------------写入用户----------------------------------------------
+//void Library::saveusers()
+//{
+//    
+//}
 
 //-----------------------------------------------------------------文件读取-----------------------------------------------------------------
 //-------------------------------------读取书本-------------------------------------------------
 void Library::readbooklist()
 {
-    ifstream in;
-    in.open("books.txt");
-    if (!in.is_open())
+    MYSQL* conn = mysql_init(nullptr);
+    if (!mysql_real_connect(conn,"localhost","LIBRARY_ADMINISTATER","123456","library_contrl_system",3306,NULL,0))
     {
-        cout << "Can't open the file" << endl;
-        return;
+        cout << "connect faile" << endl;
     }
-    string str;
-    for (int i = 0; std::getline(in, str); i++)
+    mysql_query(conn, "select ISBN,Book_name,Auther,Publishing_house,Publishing_time,INVENTORY from book_list");
+    MYSQL_RES* res = mysql_store_result(conn);
+    MYSQL_ROW row;
+    while ( row = mysql_fetch_row(res))
     {
-
-        stringstream ss(str);
-        string isbn, name, auther, Publishing_house, Publishing_time, inventorystr, type;
-        std::getline(ss, isbn, '|');
-        std::getline(ss, name, '|');
-        std::getline(ss, auther, '|');
-        std::getline(ss, Publishing_house, '|');
-        std::getline(ss, Publishing_time, '|');
-        std::getline(ss, inventorystr, '|');
-        std::getline(ss, type, '|');
-        int inventory = stoi(inventorystr);
-        Book* book = nullptr;
-        if (type == "nomal")book = new Book(isbn, name, auther, Publishing_house, Publishing_time, inventory);        
-        if (type == "electronic")
-        {
-            string sizestr, format;
-            std::getline(ss, sizestr, '|');
-            std::getline(ss, format, '|');
-            double size = stod(sizestr);
-            book = new EBook(isbn, name, auther, Publishing_house, Publishing_time, inventory, size, format);
-        }
+        Book* book = new Book(row[0],row[1],row[2],row[3],row[4],stoi(row[5]));
         booklist.push_back(book);
     }
-
-    in.close();
+    mysql_free_result(res);
+    mysql_close(conn);
 }
 
 //-------------------------------------读取用户-------------------------------------------------
 void Library::readuserlist()
 {
-    ifstream in;
-    in.open("User.txt");
-    if (!in.is_open())
+    MYSQL* conn = mysql_init(nullptr);
+    if (!mysql_real_connect(conn, "localhost", "LIBRARY_ADMINISTATER", "123456", "library_contrl_system", 3306, NULL, 0))
     {
-        cout << "Can't open the file" << endl;
-        return;
+        cout << "connect faile" << endl;
     }
-    string str;
-    for (int i = 0; std::getline(in, str); i++)
+    mysql_query(conn, "select id,name,type from user_list");
+    MYSQL_RES* res = mysql_store_result(conn);
+    MYSQL_ROW row;
+    for (int user_num = 1;row = mysql_fetch_row(res);user_num++)
     {
-        stringstream ss(str);
-        string id, name, type, borrowedbookisbn;
-        std::getline(ss, id, '|');
-        std::getline(ss, name, '|');
-        std::getline(ss, type, '|');
-
-        User* user = nullptr;
-        if (type == "student")
+        User* user;//创建用户
+        if (row[2] == "学生") { user = new Student(row[0], row[1]); }
+        else { user = new Teacher(row[0], row[1]); }
+        //读取用户借书目录
+        string view_sql = "SELECT ISBN,Book_name,Auther,Publishing_house,Publishing_time,INVENTORY FROM user_borrowed_books WHERE USER_ID = '" + string(row[0]) + "'";
+        mysql_query(conn, view_sql.c_str());
+        MYSQL_RES* res1 = mysql_store_result(conn);
+        vector<Book*> books;
+        MYSQL_ROW row1;
+        while (row1 = mysql_fetch_row(res1))
         {
-            user = new Student(id, name);
-            vector<Book*> books;
-            for (int i = 0; i < 3; i++)
-            {
-                std::getline(ss, borrowedbookisbn, '|');
-                if (borrowedbookisbn != " ")
-                {
-                    Book* book = searchbooksByisbn(borrowedbookisbn);
-                    books.push_back(book);
-                }
-            }
-            user->borrowedbooks_fromfile(books);
+            Book* book = searchbooksByisbn(row1[0]);
+            books.push_back(book);
         }
-        if (type == "teacher")
-        {
-            user = new Teacher(id, name);
-            vector<Book*> books;
-            for (int i = 0; i < 5; i++)
-            {
-                std::getline(ss, borrowedbookisbn, '|');
-                if (borrowedbookisbn != " ")
-                {
-                    Book* book = searchbooksByisbn(borrowedbookisbn);
-                    books.push_back(book);
-                }
-            }
-            user->borrowedbooks_fromfile(books);
-        }
-        if (user) userlist.push_back(user);
+        mysql_free_result(res1);
+        user->borrowedbooks_fromfile(books);
+        userlist.push_back(user);
     }
-
+    mysql_free_result(res);
+    mysql_close(conn);
 }

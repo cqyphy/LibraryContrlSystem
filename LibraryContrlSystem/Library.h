@@ -24,8 +24,8 @@ class Library
         void showall();
         User* searchuserbyID(const std::string& ID);
         //文件读写功能
-        void savebooks();
-        void saveusers();
+       /* void savebooks();
+        void saveusers();*/
         void readbooklist();
         void readuserlist();
 };

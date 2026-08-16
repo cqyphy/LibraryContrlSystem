@@ -7,10 +7,13 @@ protected:
         Book_name,
         Auther,
         Publishing_house,
-        Publishing_time;
+        Publishing_time,
+        ID;
     int inventory;
 public:
-    Book(std::string isbn, std::string book_name, std::string auther, std::string publishing_h, std::string publishing_t, int inventory) :
+    //Book(std::string isbn, std::string book_name, std::string auther, std::string publishing_h, std::string publishing_t, int inventory) :
+        //ISBN(isbn), Book_name(book_name), Auther(auther), Publishing_house(publishing_h), Publishing_time(publishing_t), inventory(inventory) {};
+    Book( std::string isbn, std::string book_name, std::string auther, std::string publishing_h, std::string publishing_t, int inventory) :
         ISBN(isbn), Book_name(book_name), Auther(auther), Publishing_house(publishing_h), Publishing_time(publishing_t), inventory(inventory) {};
     virtual ~Book() = default;
     virtual void show();
