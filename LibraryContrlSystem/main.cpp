@@ -164,7 +164,7 @@ int main()
             break;
         }
     } while (is_continue);
-    GzhuLibrary.savebooks();
-    GzhuLibrary.saveusers();
+    /*GzhuLibrary.savebooks();
+    GzhuLibrary.saveusers();*/
 
 }

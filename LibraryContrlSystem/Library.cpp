@@ -10,6 +10,15 @@ void Library::add_user(string type, string userID, string Name) {
     if (type == "学生") user = new Student(userID, Name);
     else  user = new Teacher(userID, Name);
     userlist.push_back(user);
+    MYSQL* conn = mysql_init(NULL);
+    if (!mysql_real_connect(conn, "localhost", "LIBRARY_ADMINISTATER", "123456", "library_contrl_system", 3306, NULL, 0))
+    {
+        cout << "connect faile" << endl;
+        mysql_close(conn);
+        return;
+    }
+    string insert_sql = "insert into user_lilst(name,type,user_id) values (" + Name + type + userID;
+    mysql_query(conn, insert_sql.c_str());
 }
 
 void Library::add_book(string type, string isbn, string book_name, string auther, string publishing_h, string publishing_t, int inventory)
@@ -19,6 +28,8 @@ void Library::add_book(string type, string isbn, string book_name, string auther
     if (!mysql_real_connect(conn, "localhost", "LIBRARY_ADMINISTATER", "123456", "library_contrl_system", 3306, NULL, 0))
     {
         cout << "connect faile" << endl;
+        mysql_close(conn);
+        return;
     }
     if (type == "electronic")
     {
@@ -135,13 +146,20 @@ void Library::readbooklist()
     if (!mysql_real_connect(conn,"localhost","LIBRARY_ADMINISTATER","123456","library_contrl_system",3306,NULL,0))
     {
         cout << "connect faile" << endl;
+        mysql_close(conn);
+        return;
     }
     mysql_query(conn, "select ISBN,Book_name,Auther,Publishing_house,Publishing_time,INVENTORY from book_list");
     MYSQL_RES* res = mysql_store_result(conn);
     MYSQL_ROW row;
     while ( row = mysql_fetch_row(res))
     {
-        Book* book = new Book(row[0],row[1],row[2],row[3],row[4],stoi(row[5]));
+        string isbn = row[0] ? row[0] : "NULL";
+        string name = row[1] ? row[1] : "NULL";
+        string auther = row[2] ? row[2] : "NULL";
+        string pb_h = row[3] ? row[3] : "NULL";
+        string pb_t = row[4] ? row[4] : "NULL";
+        Book* book = new Book(isbn, name, auther, pb_h, pb_t,stoi(row[5]));
         booklist.push_back(book);
     }
     mysql_free_result(res);
@@ -155,15 +173,17 @@ void Library::readuserlist()
     if (!mysql_real_connect(conn, "localhost", "LIBRARY_ADMINISTATER", "123456", "library_contrl_system", 3306, NULL, 0))
     {
         cout << "connect faile" << endl;
+        mysql_close(conn);
+        return;
     }
-    mysql_query(conn, "select id,name,type from user_list");
+    mysql_query(conn, "select id,name,type,user_id from user_list");
     MYSQL_RES* res = mysql_store_result(conn);
     MYSQL_ROW row;
     for (int user_num = 1;row = mysql_fetch_row(res);user_num++)
     {
         User* user;//创建用户
-        if (row[2] == "学生") { user = new Student(row[0], row[1]); }
-        else { user = new Teacher(row[0], row[1]); }
+        if (row[2] == "学生") { user = new Student(row[3], row[1]); }
+        else { user = new Teacher(row[3], row[1]); }
         //读取用户借书目录
         string view_sql = "SELECT ISBN,Book_name,Auther,Publishing_house,Publishing_time,INVENTORY FROM user_borrowed_books WHERE USER_ID = '" + string(row[0]) + "'";
         mysql_query(conn, view_sql.c_str());
